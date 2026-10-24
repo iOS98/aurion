@@ -3,6 +3,11 @@ const fs = require('fs');
 const path = require('path');
 
 const url = process.env.DATABASE_URL;
+// على Render القرص مؤقت: لا نقبل التشغيل بدون قاعدة بيانات حتى لا تضيع أي بيانات
+if (!url && process.env.RENDER) {
+  console.error('❌ DATABASE_URL غير مضبوط. أضِف Internal Database URL لقاعدة aurion-db في إعدادات الخدمة.');
+  process.exit(1);
+}
 
 function pgStore() {
   const { Pool } = require('pg');

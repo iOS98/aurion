@@ -11,7 +11,7 @@ if (!url && process.env.RENDER) {
 
 function pgStore() {
   const { Pool } = require('pg');
-  const local = /localhost|127\.0\.0\.1|\.internal|^postgres(ql)?:\/\/[^@]+@dpg-[a-z0-9-]+\//.test(url);
+  const local = /localhost|127\.0\.0\.1|\.internal|^postgres(ql)?:\/\/[^@]+@dpg-[a-z0-9-]+(:\d+)?\//.test(url);
   const pool = new Pool({ connectionString: url, ssl: local ? false : { rejectUnauthorized: false }, max: 5 });
   return {
     kind: 'postgres',

@@ -120,7 +120,6 @@ function toast(msg) {
 // كل البيانات والفواتير تتشفّر في الجهاز برمزك (cloud.js) وتنحفظ في خادم أوريوني الخاص على Cloudflare.
 // ما ينحفظ شي في الجهاز: البيانات تبقى في الذاكرة لين ينقفل التطبيق.
 const CLOUD_API = "https://aurion-api.o-ms.workers.dev";
-const OLD_SERVER = "https://aurion-lio3.onrender.com";   // النسخة القديمة (للنقل مرة وحدة)
 const COLLS = ['records', 'docs', 'odo'];
 const OK_MIME = /^(image\/(jpeg|png|webp|heic|heif|gif)|application\/pdf)$/;
 const MAX_ITEM = 64 * 1024;
@@ -911,7 +910,6 @@ route(/^\/car$/, () => {
     <button class="btn ghost" onclick="$('#imp').click()">${ic('upload')} استرجاع</button>
   </div>
   <input type="file" id="imp" accept="application/json,.json" hidden onchange="doImport(this.files[0])">
-  <div class="btns"><button class="btn ghost" onclick="migrateSheet()">${ic('upload')} نقل البيانات من النسخة القديمة</button></div>
   <div class="sec-title">الأمان</div>
   <div class="btns" style="grid-template-columns:1fr 1fr">
     <button class="btn ghost" onclick="passSheet()">${ic('edit')} تغيير الرمز</button>
@@ -1004,29 +1002,6 @@ window.doImport = async file => {
     toast(`تم استرجاع ${r.items} عنصر و${r.files} ملف`); render();
   } catch (e) { toast(e.message || 'ملف غير صالح'); }
 };
-window.migrateSheet = () => sheet(`<h3>نقل البيانات من النسخة القديمة</h3>
-  <p class="small muted" style="line-height:1.8;margin:0 4px 12px">اكتب الرمز اللي كنت تدخل فيه أوريوني القديم. بتنتقل كل السجلات والوثائق وصور الفواتير وبيانات السيارة، مشفّرة برمزك الجديد.</p>
-  <form id="mf" class="form"><div class="card">
-    <label class="field"><span>رمز النسخة القديمة</span><input name="pin" type="password" inputmode="numeric" autocomplete="off" required></label>
-  </div><div class="err small" style="color:#d33;margin:6px 4px"></div><div class="btns"><button class="btn">${ic('upload')} انقل البيانات</button></div></form>`, el => {
-  const f = $('#mf', el), err = $('.err', el), btn = $('button', f);
-  f.onsubmit = async e => {
-    e.preventDefault(); err.textContent = ''; btn.disabled = true;
-    const say = t => { btn.textContent = t; };
-    try {
-      say('جارٍ الاتصال بالنسخة القديمة…');
-      const r = await fetch(OLD_SERVER + '/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pin: f.pin.value }) });
-      const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j.error || 'تعذّر الدخول للنسخة القديمة');
-      say('جارٍ تنزيل البيانات…');
-      const x = await fetch(OLD_SERVER + '/api/export', { headers: { Authorization: 'Bearer ' + j.token } });
-      if (!x.ok) throw new Error('تعذّر تنزيل البيانات القديمة');
-      const res = await importBackup(await x.json(), say);
-      closeSheet(); render();
-      sheet(`<h3>تم النقل ✓</h3><p class="center" style="line-height:1.9">انتقل ${res.items} عنصر و${res.files} فاتورة للسحابة، ومشفّرة برمزك.</p><div class="btns"><button class="btn" onclick="closeSheet()">تمام</button></div>`);
-    } catch (e2) { err.textContent = e2.message === 'Failed to fetch' || e2.message === 'Load failed' ? 'تعذّر الوصول للنسخة القديمة' : e2.message; btn.disabled = false; btn.innerHTML = `${ic('upload')} انقل البيانات`; }
-  };
-});
 window.passSheet = () => sheet(`<h3>تغيير رمز الدخول</h3>
   <form id="pf" class="form"><div class="card">
     <label class="field"><span>الرمز الحالي</span><input name="o" type="password" autocomplete="current-password" required></label>
@@ -1073,7 +1048,6 @@ async function start() {
   S = normState(st);
   $('.tabbar').hidden = false;
   render();
-  if (isEmptyState(st)) setTimeout(() => migrateSheet(), 400);
 }
 window.start = start;
 window.go = go;

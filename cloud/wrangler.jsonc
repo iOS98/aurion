@@ -1,0 +1,13 @@
+// خادم أوريوني — خاص بهذا التطبيق فقط، وقاعدة بياناته خاصة فيه
+{
+  "name": "aurion-api",
+  "main": "worker.js",
+  "compatibility_date": "2026-06-01",
+  "workers_dev": true,
+  "d1_databases": [
+    { "binding": "DB", "database_name": "aurion-db" }
+  ],
+  "vars": {
+    "ALLOWED_ORIGINS": "https://aurion-web-xlz8.onrender.com"
+  }
+}

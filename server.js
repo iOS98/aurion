@@ -41,6 +41,19 @@ app.use(express.static(path.join(__dirname, 'public'), {
   }
 }));
 
+// ---------- النقل للنسخة الجديدة (aurion-web): يسمح لها فقط تقرأ النسخة الكاملة مرة وحدة ----------
+const NEW_APP = 'https://aurion-web-xlz8.onrender.com';
+app.use(['/api/login', '/api/export'], (req, res, next) => {
+  if (req.headers.origin === NEW_APP) {
+    res.setHeader('Access-Control-Allow-Origin', NEW_APP);
+    res.setHeader('Vary', 'Origin');
+    res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+    if (req.method === 'OPTIONS') return res.status(204).end();
+  }
+  next();
+});
+
 // ---------- الدخول ----------
 const attempts = new Map();
 app.post('/api/login', (req, res) => {
@@ -153,7 +166,7 @@ app.delete('/api/files/:id', auth, wrap(async (req, res) => {
 
 // ---------- النسخ الاحتياطي ----------
 app.get('/api/export', auth, wrap(async (req, res) => {
-  const out = { app: 'aurion', version: 1, exportedAt: new Date().toISOString(), car: await store.get('meta', 'car') };
+  const out = { app: 'aurion', version: 1, exportedAt: new Date().toISOString(), car: (await store.get('meta', 'car')) || CAR_DEFAULTS };
   for (const c of COLLECTIONS) out[c] = await store.list(c);
   out.files = [];
   for (const m of await store.listFiles()) {

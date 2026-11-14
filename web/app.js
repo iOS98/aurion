@@ -57,6 +57,18 @@ const CATS = [
   { k: 'other', n: 'أخرى', i: 'dots', c: '#7A84A0' }
 ];
 const CAT = Object.fromEntries(CATS.map(c => [c.k, c]));
+// عداد دائري بطابع لوحة السيارة
+function gauge(p, val, label, main = false, tone = '', sub = '') {
+  const r = 50, C = 2 * Math.PI * r, L = C * .75, sw = main ? 7 : 6;
+  const ticks = main ? Array.from({ length: 11 }, (_, i) => {
+    const a = (135 + i * 27) * Math.PI / 180, r1 = 38, r2 = i % 5 ? 41 : 43;
+    return `<line class="tick" x1="${60 + r1 * Math.cos(a)}" y1="${60 + r1 * Math.sin(a)}" x2="${60 + r2 * Math.cos(a)}" y2="${60 + r2 * Math.sin(a)}"/>`;
+  }).join('') : '';
+  return `<div class="gauge ${main ? 'main ' + tone : ''}"><svg viewBox="0 0 120 120" aria-hidden="true">
+    <circle class="trk" cx="60" cy="60" r="${r}" stroke-width="${sw}" stroke-dasharray="${L} ${C}" transform="rotate(135 60 60)"/>
+    <circle class="val ${tone}" cx="60" cy="60" r="${r}" stroke-width="${sw}" stroke-dasharray="${L * Math.max(0, Math.min(1, p))} ${C}" transform="rotate(135 60 60)"/>${ticks}</svg>
+    <div class="read"><b class="num">${val}</b><span>${label}</span>${sub ? `<em>${esc(sub)}</em>` : ''}</div></div>`;
+}
 const catIc = (k, size = '') => { const c = CAT[k] || CAT.other; return `<span class="cat-ic ${size}" style="background:${c.c}1f;color:${c.c}">${ic(c.i)}</span>`; };
 
 const DOC_TYPES = {
@@ -335,20 +347,29 @@ route(/^\/$/, () => {
   const lastFuel = S.records.filter(r => r.cat === 'fuel').sort((a, b) => b.date.localeCompare(a.date))[0];
   const h = new Date().getHours();
   const greet = h < 12 ? 'صباح الخير' : 'مساء الخير';
+  // مؤشر الزيت: كم مشيت من آخر تغيير مقابل المسافة المحددة
+  const oilDue = dueItems().find(x => x.r.cat === 'oil' && x.kmLeft != null);
+  const iv = Number(c.oilInterval) || 5000;
+  const oil = oilDue
+    ? { p: Math.max(0, Math.min(1, 1 - oilDue.kmLeft / iv)), tone: oilDue.kmLeft < 0 ? 'danger' : oilDue.kmLeft <= 700 ? '' : 'ok',
+        txt: oilDue.kmLeft < 0 ? `الزيت متأخر ${NF0.format(-oilDue.kmLeft)} كم` : `الزيت بعد ${NF0.format(oilDue.kmLeft)} كم` }
+    : { p: 0, tone: '', txt: '' };
+  // الشهر الحالي مقابل متوسط الأشهر السابقة
+  const byM = {}; for (const x of ex) if (!x.date.startsWith(ym)) byM[x.date.slice(0, 7)] = (byM[x.date.slice(0, 7)] || 0) + x.amount;
+  const mAvg = Object.values(byM).length ? Object.values(byM).reduce((a, b) => a + b, 0) / Object.values(byM).length : 0;
+  const mp = mAvg ? Math.min(1, month / (mAvg * 2)) : (month ? .5 : 0);
   return `
-  <div class="top"><h1>${greet}<span class="sub">${esc(c.make)} ${esc(c.model)} ${c.year}</span></h1>
+  <div class="top"><h1>${greet}</h1>
     <a class="icon-btn" href="#/car" aria-label="السيارة">${ic('car')}</a></div>
   <section class="hero">
     <div class="hero-head">
-      <div><div class="hero-title">سيارتي</div><div class="hero-name">${esc(c.model)} <span class="num">${c.year}</span></div></div>
+      <div><div class="hero-title">سيارتي</div><div class="hero-name">${esc(c.make)} ${esc(c.model)} <span class="num">${c.year}</span></div></div>
       ${plate()}
     </div>
-    <img class="hero-car" src="/img/car.png" alt="${esc(c.make)} ${esc(c.model)} ${esc(c.color)}">
-    <div class="hero-road"></div>
-    <div class="hero-stats">
-      <div class="hero-stat"><b class="num">${odo ? NF0.format(odo) : '—'}</b><span>كم على العداد</span></div>
-      <div class="hero-stat"><b class="num">${fs.avg ? NF.format(fs.avg.toFixed(1)) : '—'}</b><span>كم / لتر</span></div>
-      <div class="hero-stat"><b class="num">${NF0.format(month)}</b><span>ر.س الشهر</span></div>
+    <div class="cluster">
+      ${gauge(fs.avg ? Math.min(1, fs.avg / 20) : 0, fs.avg ? NF.format(fs.avg.toFixed(1)) : '—', 'كم / لتر')}
+      ${gauge(oil.p, odo ? NF0.format(odo) : '—', 'كم على العداد', true, oil.tone, oil.txt)}
+      ${gauge(mp, NF0.format(month), 'ر.س الشهر')}
     </div>
   </section>
 
@@ -884,10 +905,9 @@ route(/^\/car$/, () => {
   const c = car(), odo = currentOdo();
   const spec = (k, v, cls = '') => `<div class="spec"><span>${k}</span><b class="${cls}">${v ? esc(v) : '<span class="muted">—</span>'}</b></div>`;
   return `${header('سيارتي')}
-  <div class="hero" style="text-align:center">
-    <img class="hero-car" src="/img/car.png" alt="">
-    <div class="hero-road"></div>
-    <div class="hero-name">${esc(c.make)} ${esc(c.model)} <span class="num">${c.year}</span></div>
+  <div class="hero" style="text-align:center;padding:22px 16px">
+    <div class="hero-title">سيارتي</div>
+    <div class="hero-name" style="font-size:24px">${esc(c.make)} ${esc(c.model)} <span class="num">${c.year}</span></div>
     <div style="margin:10px 0 4px">${plate(true)}</div>
   </div>
   <div class="sec-title">البيانات</div>
@@ -1041,7 +1061,7 @@ window.addSheet = () => sheet(`<h3>إضافة</h3><div class="actions">
 async function start() {
   if (!window.Cloud) await new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = '/cloud.js?v=' + Date.now(); sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); }); // لو الصفحة قديمة من الكاش
   const st = await Cloud.start({
-    app: 'aurion', api: CLOUD_API, title: 'أوريوني', icon: '/icons/icon-180.png', accent: '#2F6BFF',
+    app: 'aurion', api: CLOUD_API, title: 'أوريوني', icon: '/icons/icon-180.png', accent: '#FF7A1A',
     isEmpty: isEmptyState,
     onRemote: d => { S = normState(d); blobUrls.clear(); render(); }
   });

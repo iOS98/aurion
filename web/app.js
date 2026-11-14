@@ -129,7 +129,7 @@ function toast(msg) {
 }
 
 // ---------- السحابة ----------
-// كل البيانات والفواتير تتشفّر في الجهاز برمزك (cloud.js) وتنحفظ في خادم أوريوني الخاص على Cloudflare.
+// كل البيانات والفواتير تتشفّر في الجهاز برمزك (cloud.js) وتنحفظ في خادم AURION الخاص على Cloudflare.
 // ما ينحفظ شي في الجهاز: البيانات تبقى في الذاكرة لين ينقفل التطبيق.
 const CLOUD_API = "https://aurion-api.o-ms.workers.dev";
 const COLLS = ['records', 'docs', 'odo'];
@@ -952,7 +952,7 @@ route(/^\/car$/, () => {
     <button class="btn ghost" onclick="passSheet()">${ic('edit')} تغيير الرمز</button>
     <button class="btn danger" onclick="Cloud.lock()">${ic('logout')} قفل التطبيق</button>
   </div>
-  <p class="center small muted" style="margin-top:20px">أوريوني · صُمّم خصيصًا لسيارتك</p>`;
+  <p class="center small muted" style="margin-top:20px"><span class="brand">AURION</span> · صُمّم خصيصًا لسيارتك</p>`;
 });
 route(/^\/car\/edit$/, () => {
   const c = car();
@@ -1078,7 +1078,7 @@ window.addSheet = () => sheet(`<h3>إضافة</h3><div class="actions">
 async function start() {
   if (!window.Cloud) await new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = '/cloud.js?v=' + Date.now(); sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); }); // لو الصفحة قديمة من الكاش
   const st = await Cloud.start({
-    app: 'aurion', api: CLOUD_API, title: 'أوريوني', icon: '/icons/icon-180.png?v=2', accent: '#FF7A1A',
+    app: 'aurion', api: CLOUD_API, title: '<span class="brand">AURION</span>', icon: '/icons/icon-180.png?v=2', accent: '#FF7A1A',
     isEmpty: isEmptyState,
     onRemote: d => { S = normState(d); blobUrls.clear(); render(); }
   });

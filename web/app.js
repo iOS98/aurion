@@ -314,16 +314,33 @@ const header = (title, sub = '', back = true, extra = '') => `
     <h1>${title}${sub ? `<span class="sub">${sub}</span>` : ''}</h1>${extra}
   </div>`;
 
+// شعار النخلة والسيفين (مبسّط) للوحة
+const EMBLEM = `<svg viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round">
+  <path d="M50 70V30" stroke-width="4"/>
+  <g stroke-width="3.2"><path d="M50 30C42 25 31 26 22 34"/><path d="M50 30C58 25 69 26 78 34"/>
+  <path d="M50 30C41 30 33 35 28 46"/><path d="M50 30C59 30 67 35 72 46"/>
+  <path d="M50 30C44 34 40 40 39 50"/><path d="M50 30C56 34 60 40 61 50"/>
+  <path d="M50 30C45 22 38 18 30 18"/><path d="M50 30C55 22 62 18 70 18"/><path d="M50 30C49 24 49 18 50 12"/></g>
+  <g stroke-width="3.4"><path d="M76 90C58 84 32 76 10 58"/><path d="M24 90C42 84 68 76 90 58"/></g>
+  <g stroke-width="3"><path d="M69 82l6 8M31 82l-6 8"/><path d="M78 92l6-3M22 92l-6-3"/></g>
+</g></svg>`;
 function plate(big = false) {
   const c = car();
   if (!c.plateNum) return '';
-  const ar = String(c.plateNum).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
-  const arL = c.plateAr.split(/\s+/).reverse().join(' ');
-  const enL = c.plateEn.split('').join(' ');
-  return `<div class="plate ${big ? 'big' : ''}" aria-label="اللوحة ${esc(c.plateAr)} ${esc(c.plateNum)}">
-    <div class="ksa"><i></i>KSA</div>
-    <span class="ar d">${esc(ar)}</span><span class="ar">${esc(arL)}</span>
-    <span class="en d">${esc(c.plateNum)}</span><span class="en">${esc(enL)}</span></div>`;
+  const toAr = d => d.replace(/\d/g, x => '٠١٢٣٤٥٦٧٨٩'[x]);
+  const toEn = d => d.replace(/[٠-٩]/g, x => '٠١٢٣٤٥٦٧٨٩'.indexOf(x));
+  const nums = Array.from(toEn(String(c.plateNum)).replace(/\D/g, ''));
+  // الحروف العربية تُكتب من اليمين، واللوحة تُقرأ بصريًا من اليسار: نعكسها عشان كل حرف يجي فوق مقابله الإنجليزي
+  const arL = Array.from(String(c.plateAr || '').replace(/\s+/g, '')).reverse();
+  const enL = Array.from(String(c.plateEn || '').replace(/\s+/g, '').toUpperCase());
+  const col = (top, bot) => { const n = Math.max(top.length, bot.length, 1);
+    return `<div class="pl-grid" style="grid-template-columns:repeat(${n},1fr)">${Array.from({ length: n }, (_, i) => `<b class="pa">${esc(top[i] || '')}</b>`).join('')}${Array.from({ length: n }, (_, i) => `<b class="pe">${esc(bot[i] || '')}</b>`).join('')}</div>`; };
+  return `<div class="plate ${big ? 'big' : ''}" role="img" aria-label="اللوحة ${esc(c.plateAr)} ${esc(c.plateNum)}">
+    ${col(nums.map(toAr), nums)}
+    <div class="pl-emb">${EMBLEM}</div>
+    ${col(arL, enL)}
+    <div class="pl-ksa"><span class="pl-emb-s">${EMBLEM}</span><small>السعودية</small><b>K</b><b>S</b><b>A</b></div>
+  </div>`;
 }
 
 function recordRow(r, showDate = true) {
@@ -363,7 +380,7 @@ route(/^\/$/, () => {
     <a class="icon-btn" href="#/car" aria-label="السيارة">${ic('car')}</a></div>
   <section class="hero">
     <div class="hero-head">
-      <div><div class="hero-title">سيارتي</div><div class="hero-name">${esc(c.make)} ${esc(c.model)} <span class="num">${c.year}</span></div></div>
+      <div><div class="hero-title">${esc(c.make)}</div><div class="hero-name">${esc(c.model)} <span class="num">${c.year}</span></div></div>
       ${plate()}
     </div>
     <div class="cluster">

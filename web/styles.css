@@ -70,22 +70,9 @@ svg.i { width: 1.25em; height: 1.25em; stroke: currentColor; fill: none; stroke-
 .hero-car { display: block; width: 100%; max-width: 360px; margin: 6px auto -4px; opacity: .9; filter: grayscale(.2) drop-shadow(0 14px 12px rgba(0,0,0,.6)); }
 .hero-road { height: 2px; margin: 4px 15% 12px; background: linear-gradient(90deg, transparent, var(--primary), transparent); opacity: .6; }
 
-/* اللوحة السعودية — بنفس نمط اللوحة الحقيقية (نسبة ٤٫٥ : ١) */
-.plate { direction: ltr; font-size: 3.6px; display: inline-grid; grid-template-columns: 16em 8em 15em 4.6em; align-items: stretch; box-sizing: content-box;
-  width: 43.6em; height: 10em; padding: 0 0 0 1em; flex: none; overflow: hidden;
-  background: linear-gradient(180deg, #FBFBFB, #E6E6E8); color: #111; border: .3em solid #1A1A1A; border-radius: .9em;
-  box-shadow: 0 .6em 1.6em -.6em rgba(0,0,0,.8); }
-.plate.big { font-size: 7.2px; }
-.pl-grid { display: grid; grid-template-rows: 1fr 1fr; align-items: center; justify-items: center; padding: .3em .2em; }
-.pl-grid b { font-weight: 500; line-height: 1; white-space: nowrap; }
-.pl-grid .pa { font-family: 'Noto Sans Arabic', 'Geeza Pro', sans-serif; font-size: 3.6em; transform: translateY(-.08em); }
-.pl-grid .pe { font-family: 'Arimo', Arial, 'Helvetica Neue', sans-serif; font-size: 3.7em; }
-.pl-emb { display: grid; place-items: center; padding: .6em .4em; }
-.pl-emb svg { width: 100%; height: 100%; color: #141414; }
-.pl-ksa { border-left: .22em solid #1A1A1A; display: flex; flex-direction: column; align-items: center; justify-content: center; margin-left: .6em; padding: .2em 0; }
-.pl-ksa .pl-emb-s svg { width: 1.7em; height: 1.7em; color: #222; display: block; }
-.pl-ksa small { font-family: 'Noto Sans Arabic', 'Geeza Pro', sans-serif; font-size: .62em; line-height: 1.3; font-weight: 600; white-space: nowrap; }
-.pl-ksa b { font-family: 'Arimo', Arial, sans-serif; font-size: 1.7em; line-height: 1.02; font-weight: 700; }
+/* اللوحة السعودية (52×11 سم) */
+.plate-svg { display: block; width: 157px; height: auto; aspect-ratio: 5200 / 1100; flex: none; filter: drop-shadow(0 6px 10px rgba(0,0,0,.45)); }
+.plate-svg.big { width: min(100%, 330px); margin: 0 auto; }
 
 /* ---------- البطاقات ---------- */
 .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; margin-bottom: 12px; }

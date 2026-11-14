@@ -315,32 +315,29 @@ const header = (title, sub = '', back = true, extra = '') => `
   </div>`;
 
 // شعار النخلة والسيفين (مبسّط) للوحة
-const EMBLEM = `<svg viewBox="0 0 100 100" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round">
-  <path d="M50 70V30" stroke-width="4"/>
-  <g stroke-width="3.2"><path d="M50 30C42 25 31 26 22 34"/><path d="M50 30C58 25 69 26 78 34"/>
-  <path d="M50 30C41 30 33 35 28 46"/><path d="M50 30C59 30 67 35 72 46"/>
-  <path d="M50 30C44 34 40 40 39 50"/><path d="M50 30C56 34 60 40 61 50"/>
-  <path d="M50 30C45 22 38 18 30 18"/><path d="M50 30C55 22 62 18 70 18"/><path d="M50 30C49 24 49 18 50 12"/></g>
-  <g stroke-width="3.4"><path d="M76 90C58 84 32 76 10 58"/><path d="M24 90C42 84 68 76 90 58"/></g>
-  <g stroke-width="3"><path d="M69 82l6 8M31 82l-6 8"/><path d="M78 92l6-3M22 92l-6-3"/></g>
-</g></svg>`;
+let plateSeq = 0;
 function plate(big = false) {
   const c = car();
-  if (!c.plateNum) return '';
+  if (!c.plateNum || !window.PLATE_SVG) return '';
   const toAr = d => d.replace(/\d/g, x => '٠١٢٣٤٥٦٧٨٩'[x]);
   const toEn = d => d.replace(/[٠-٩]/g, x => '٠١٢٣٤٥٦٧٨٩'.indexOf(x));
-  const nums = Array.from(toEn(String(c.plateNum)).replace(/\D/g, ''));
+  const nums = Array.from(toEn(String(c.plateNum)).replace(/\D/g, '')).slice(0, 4);
   // الحروف العربية تُكتب من اليمين، واللوحة تُقرأ بصريًا من اليسار: نعكسها عشان كل حرف يجي فوق مقابله الإنجليزي
-  const arL = Array.from(String(c.plateAr || '').replace(/\s+/g, '')).reverse();
-  const enL = Array.from(String(c.plateEn || '').replace(/\s+/g, '').toUpperCase());
-  const col = (top, bot) => { const n = Math.max(top.length, bot.length, 1);
-    return `<div class="pl-grid" style="grid-template-columns:repeat(${n},1fr)">${Array.from({ length: n }, (_, i) => `<b class="pa">${esc(top[i] || '')}</b>`).join('')}${Array.from({ length: n }, (_, i) => `<b class="pe">${esc(bot[i] || '')}</b>`).join('')}</div>`; };
-  return `<div class="plate ${big ? 'big' : ''}" role="img" aria-label="اللوحة ${esc(c.plateAr)} ${esc(c.plateNum)}">
-    ${col(nums.map(toAr), nums)}
-    <div class="pl-emb">${EMBLEM}</div>
-    ${col(arL, enL)}
-    <div class="pl-ksa"><span class="pl-emb-s">${EMBLEM}</span><small>السعودية</small><b>K</b><b>S</b><b>A</b></div>
-  </div>`;
+  const arL = Array.from(String(c.plateAr || '').replace(/\s+/g, '')).reverse().slice(0, 3);
+  const enL = Array.from(String(c.plateEn || '').replace(/\s+/g, '').toUpperCase()).slice(0, 3);
+  const AR = 'font-family="Noto Naskh Arabic, Scheherazade New, serif" font-weight="700" font-size="365"';
+  const EN = 'font-family="Barlow Condensed, Arial Narrow, sans-serif" font-weight="700" font-size="355"';
+  const row = (chars, cx, gap, y, font) => chars.map((ch, i) => `<text x="${(cx + (i - (chars.length - 1) / 2) * gap).toFixed(2)}" y="${y}" text-anchor="middle" ${font}>${esc(ch)}</text>`).join('');
+  const u = 'p' + (++plateSeq);
+  const P = window.PLATE_SVG;
+  return `<svg class="plate-svg ${big ? 'big' : ''}" viewBox="0 0 5200 1100" role="img" aria-label="اللوحة ${esc(c.plateAr)} ${esc(c.plateNum)}" xmlns="http://www.w3.org/2000/svg">
+    ${P.body.replaceAll('__U__', u)}
+    <g fill="#181a1c" filter="url(#realistic-emboss-${u})">
+      ${row(nums.map(toAr), 981.25, 340, 413, AR)}${row(nums, 981.25, 340, 919, EN)}
+      ${row(arL, 3719.75, 520, 413, AR)}${row(enL, 3719.75, 520, 919, EN)}
+      ${P.ksa.replaceAll('__U__', u)}
+    </g>
+  </svg>`;
 }
 
 function recordRow(r, showDate = true) {

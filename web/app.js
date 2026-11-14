@@ -1078,7 +1078,7 @@ window.addSheet = () => sheet(`<h3>إضافة</h3><div class="actions">
 async function start() {
   if (!window.Cloud) await new Promise((res, rej) => { const sc = document.createElement('script'); sc.src = '/cloud.js?v=' + Date.now(); sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); }); // لو الصفحة قديمة من الكاش
   const st = await Cloud.start({
-    app: 'aurion', api: CLOUD_API, title: 'أوريوني', icon: '/icons/icon-180.png', accent: '#FF7A1A',
+    app: 'aurion', api: CLOUD_API, title: 'أوريوني', icon: '/icons/icon-180.png?v=2', accent: '#FF7A1A',
     isEmpty: isEmptyState,
     onRemote: d => { S = normState(d); blobUrls.clear(); render(); }
   });

@@ -943,7 +943,7 @@ route(/^\/car$/, () => {
     <button class="btn ghost" onclick="doExport()">${ic('download')} تنزيل نسخة</button>
     <button class="btn ghost" onclick="$('#imp').click()">${ic('upload')} استرجاع</button>
   </div>
-  <input type="file" id="imp" accept="application/json,.json" hidden onchange="doImport(this.files[0])">
+  <input type="file" id="imp" accept="application/json,.json" hidden onchange="doImport(this.files[0]); this.value=''">
   <div class="sec-title">الأمان</div>
   <div class="btns" style="grid-template-columns:1fr 1fr">
     <button class="btn ghost" onclick="passSheet()">${ic('edit')} تغيير الرمز</button>
@@ -1005,13 +1005,19 @@ window.doExport = async () => {
   } catch (e) { toast(e.message); }
 };
 // يدمج نسخة (من ملف أو من الخادم القديم) في السحابة، ويتأكد إنها انحفظت
-async function importBackup(b, progress) {
+// يدمج نسخة في السحابة (أو يستبدل كل البيانات بها لو replace)، ويتأكد إنها انحفظت
+async function importBackup(b, progress, replace = false) {
   if (!b || b.app !== 'aurion') throw new Error('ملف النسخة غير صالح');
   let n = 0, nf = 0;
   const files = (b.files || []).filter(f => f?.id && f.data && OK_MIME.test(f.mime));
+  // الملفات الجديدة أولاً؛ القديمة ما تنمسح إلا بعد ما تنحفظ النسخة الجديدة وتتأكد
   for (const f of files) {
     progress?.(`رفع الفواتير ${++nf}/${files.length}…`);
     await Cloud.putFile(f.id, Uint8Array.from(atob(f.data), c => c.charCodeAt(0)));
+  }
+  const oldFiles = replace ? S.files.map(f => f.id) : [];
+  if (replace) S = normState({});
+  for (const f of files) {
     const { data, ...meta } = f;
     const i = S.files.findIndex(x => x.id === f.id); if (i >= 0) S.files[i] = meta; else S.files.push(meta);
   }
@@ -1026,15 +1032,30 @@ async function importBackup(b, progress) {
   // تحقق: كل عنصر وكل فاتورة موجودين في السحابة
   for (const c of COLLS) for (const it of b[c] || []) if (it?.id && !Cloud.state[c].some(x => x.id === it.id)) throw new Error('تحقق النقل فشل');
   for (const f of files) await Cloud.getFile(f.id);
+  const keep = new Set(files.map(f => f.id));
+  for (const id of oldFiles) if (!keep.has(id)) await Cloud.deleteFile(id).catch(() => { });
+  blobUrls.clear();
   return { items: n, files: files.length };
 }
-window.doImport = async file => {
+window.doImport = file => {
   if (!file) return;
-  if (!confirm('استرجاع النسخة؟ ستُضاف بياناتها وتُحدَّث العناصر المتطابقة.')) return;
-  try {
-    const r = await importBackup(JSON.parse(await file.text()), t => toast(t));
-    toast(`تم استرجاع ${r.items} عنصر و${r.files} ملف`); render();
-  } catch (e) { toast(e.message || 'ملف غير صالح'); }
+  sheet(`<h3>استرجاع نسخة</h3>
+  <p class="small muted" style="line-height:1.8;margin:0 4px 14px">${esc(file.name)}</p>
+  <div class="btns" style="grid-template-columns:1fr">
+    <button class="btn danger" data-m="replace">${ic('trash')} امسح بيانات التطبيق وحط هذي مكانها</button>
+    <button class="btn ghost" data-m="merge">${ic('upload')} أضفها للبيانات الحالية</button>
+  </div>`, el => {
+    $$('[data-m]', el).forEach(bt => bt.onclick = async () => {
+      const replace = bt.dataset.m === 'replace';
+      if (replace && !confirm('أكيد؟ كل السجلات والوثائق والفواتير الحالية بتنمسح وتنحط مكانها بيانات الملف.')) return;
+      $$('[data-m]', el).forEach(x => x.disabled = true);
+      try {
+        const r = await importBackup(JSON.parse(await file.text()), t => { bt.textContent = t; }, replace);
+        closeSheet(); render();
+        toast(`${replace ? 'تم الاستبدال' : 'تمت الإضافة'}: ${r.items} عنصر و${r.files} ملف`);
+      } catch (e) { closeSheet(); toast(e.message || 'ملف غير صالح'); }
+    });
+  });
 };
 window.passSheet = () => sheet(`<h3>تغيير رمز الدخول</h3>
   <form id="pf" class="form"><div class="card">

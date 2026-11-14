@@ -1,6 +1,6 @@
 // يحفظ واجهة التطبيق فقط ليفتح بسرعة؛ البيانات دائمًا من السحابة ومشفّرة، وما تنحفظ في الجهاز
-const CACHE = 'aurion-cloud-v8';
-const SHELL = ['/', '/index.html', '/styles.css?v=5', '/app.js?v=7', '/plate.js?v=1', '/cloud.js?v=3', '/cloud.css?v=3', '/img/car.png', '/manifest.webmanifest?v=3', '/icons/icon-180.png?v=2'];
+const CACHE = 'aurion-cloud-v10';
+const SHELL = ['/', '/index.html', '/styles.css?v=6', '/app.js?v=8', '/plate.js?v=1', '/cloud.js?v=3', '/cloud.css?v=3', '/img/car.png', '/manifest.webmanifest?v=3', '/icons/icon-180.png?v=2'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL))); self.skipWaiting(); });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim()));

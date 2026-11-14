@@ -71,8 +71,8 @@ svg.i { width: 1.25em; height: 1.25em; stroke: currentColor; fill: none; stroke-
 .hero-road { height: 2px; margin: 4px 15% 12px; background: linear-gradient(90deg, transparent, var(--primary), transparent); opacity: .6; }
 
 /* اللوحة السعودية (52×11 سم) */
-.plate-svg { display: block; width: 157px; height: auto; aspect-ratio: 5200 / 1100; flex: none; filter: drop-shadow(0 6px 10px rgba(0,0,0,.45)); }
-.plate-svg.big { width: min(100%, 330px); margin: 0 auto; }
+.plate-svg { display: block; width: 157px; max-width: 42%; height: auto; aspect-ratio: 5200 / 1100; flex: none; filter: drop-shadow(0 6px 10px rgba(0,0,0,.45)); }
+.plate-svg.big { max-width: none; width: min(100%, 330px); margin: 0 auto; }
 
 /* ---------- البطاقات ---------- */
 .card { background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; margin-bottom: 12px; }

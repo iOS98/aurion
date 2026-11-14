@@ -126,6 +126,20 @@
     });
   }
 
+  // ---------- تذكّر الجهاز: مفتاح التشفير (غير قابل للاستخراج) + مفتاح الدخول في IndexedDB ----------
+  // البيانات نفسها ما تنحفظ في الجهاز؛ بس المفتاح عشان ما يطلب الرمز كل مرة
+  function devDb() {
+    return new Promise((res, rej) => { const r = indexedDB.open('cloud-device-' + cfg.app, 1); r.onupgradeneeded = () => r.result.createObjectStore('k'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+  }
+  async function devTx(mode, fn) {
+    const db = await devDb();
+    try { return await new Promise((res, rej) => { const t = db.transaction('k', mode); const r = fn(t.objectStore('k')); t.oncomplete = () => res(r && r.result); t.onerror = () => rej(t.error); }); }
+    finally { db.close(); }
+  }
+  const devLoad = () => cfg.remember ? devTx('readonly', st => st.get('device')).catch(() => null) : Promise.resolve(null);
+  const devSave = () => cfg.remember ? devTx('readwrite', st => st.put({ key: encKey, token }, 'device')).catch(() => { }) : Promise.resolve();
+  const devClear = () => devTx('readwrite', st => st.delete('device')).catch(() => { });
+
   // ---------- الدخول + النقل من النسخة القديمة ----------
   async function gate() {
     let meta;
@@ -161,12 +175,31 @@
           await api('/api/setup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ salt, iter: ITER, token: k.token }) });
           encKey = k.key; token = k.token;
           stateVersion = 0; stateObj = null;
+          await devSave();
           if (legacy) await migrate(legacy);
           return;
         } catch (e) {
           if (e.code === 'already_setup') { return gate(); }
           const f2 = card(`<div class="cg-err">${errText(e)}</div><button class="cg-btn" value="retry">رجوع</button>`); await ask(f2);
         }
+      }
+    }
+
+    // جهاز متذكَّر: ندخل مباشرة بدون رمز
+    const dev = meta.setup ? await devLoad() : null;
+    if (dev && dev.key && dev.token) {
+      card('<p>جاري الفتح…</p>');
+      try {
+        token = dev.token;
+        await api('/api/check');
+        encKey = dev.key;
+        const s = await fetchState();
+        stateVersion = s.version; stateObj = s.obj;
+        return;
+      } catch (e) {
+        token = null; encKey = null;
+        if (e.status === 401 || e.code === 'unauthorized' || e.code === 'bad_passcode') await devClear();   // تغيّر الرمز من جهاز ثاني
+        else { const f2 = card(`<p>${errText(e)}</p><button class="cg-btn" value="retry">إعادة المحاولة</button>`); await ask(f2); return gate(); }
       }
     }
 
@@ -183,6 +216,7 @@
         encKey = k.key;
         const s = await fetchState();
         stateVersion = s.version; stateObj = s.obj;
+        await devSave();
         if (legacyInfo) await legacyOnSecondDevice(p);
         return;
       } catch (e) {
@@ -318,6 +352,7 @@
     }
     await api('/api/rekey', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ salt, iter: ITER, token: newK.token }) });
     token = newK.token; encKey = newK.key;
+    await devSave();
     const s = await fetchState(); stateVersion = s.version;
   }
 
@@ -326,6 +361,7 @@
     if (dirty || saving) { try { await flush(); } catch (e) { } }
     if (dirty) return;               // ما انحفظ: لا تقفل وتضيّع التعديل
     encKey = null; token = null; stateObj = null;
+    await devClear();               // القفل اليدوي = نسيان هذا الجهاز
     location.reload();
   }
   function watchIdle() {
@@ -333,13 +369,13 @@
     ['pointerdown', 'keydown', 'touchstart', 'scroll'].forEach(ev => addEventListener(ev, () => { lastActivity = Date.now(); }, { passive: true }));
     document.addEventListener('visibilitychange', async () => {
       if (document.hidden) { hiddenAt = Date.now(); if (dirty) flush(); return; }
-      if (hiddenAt && Date.now() - hiddenAt > away) return lock();
+      if (!cfg.remember && hiddenAt && Date.now() - hiddenAt > away) return lock();
       // رجعت للتطبيق: لو تغيّرت البيانات من جهاز ثاني ونسختي محفوظة، حدّث
       if (!dirty && !saving && token) {
         try { const s = await fetchState(); if (s.version !== stateVersion) { stateVersion = s.version; stateObj = s.obj; cfg.onRemote && cfg.onRemote(stateObj); setPill('تحدّثت البيانات'); } } catch (e) { }
       }
     });
-    setInterval(() => { if (Date.now() - lastActivity > idle && !dirty) lock(); }, 30000);
+    if (!cfg.remember) setInterval(() => { if (Date.now() - lastActivity > idle && !dirty) lock(); }, 30000);
     addEventListener('beforeunload', e => { if (dirty || saving) { e.preventDefault(); e.returnValue = ''; } });
   }
 

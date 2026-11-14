@@ -950,7 +950,7 @@ route(/^\/car$/, () => {
   <div class="sec-title">الأمان</div>
   <div class="btns" style="grid-template-columns:1fr 1fr">
     <button class="btn ghost" onclick="passSheet()">${ic('edit')} تغيير الرمز</button>
-    <button class="btn danger" onclick="Cloud.lock()">${ic('logout')} قفل التطبيق</button>
+    <button class="btn danger" onclick="if(confirm('تسجيل الخروج من هذا الجهاز؟ بيطلب الرمز المرة الجاية.')) Cloud.lock()">${ic('logout')} تسجيل خروج</button>
   </div>
   <p class="center small muted" style="margin-top:20px"><span class="brand">AURION</span> · صُمّم خصيصًا لسيارتك</p>`;
 });
@@ -1080,6 +1080,7 @@ async function start() {
   const st = await Cloud.start({
     app: 'aurion', api: CLOUD_API, title: '<span class="brand">AURION</span>', icon: '/icons/icon-180.png?v=2', accent: '#FF7A1A',
     isEmpty: isEmptyState,
+    remember: true,   // يتذكّر هذا الجهاز: الرمز مرة وحدة بس
     onRemote: d => { S = normState(d); blobUrls.clear(); render(); }
   });
   S = normState(st);

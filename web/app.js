@@ -1118,3 +1118,7 @@ $('.tabbar').innerHTML = `
 start();
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
+
+// بدون تكبير بإصبعين (سفاري يتجاهل user-scalable أحياناً)
+['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+document.addEventListener('touchmove', e => { if (e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
